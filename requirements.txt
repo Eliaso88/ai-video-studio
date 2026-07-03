@@ -1,0 +1,46 @@
+# Core dependencies
+# Minimal runtime dependencies for the backend API.
+# For the full stack, keep the optional extras below.
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.13.4
+python-dotenv==1.0.0
+
+# Database
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+
+# Queue/Background jobs
+redis==5.0.1
+rq==1.14.1
+
+# AWS
+boto3==1.28.85
+
+# HTTP/Requests
+requests==2.31.0
+httpx==0.25.1
+
+# Retry logic
+tenacity==8.2.3
+
+# Video processing
+opencv-python==4.8.1.78
+
+# AI/ML
+torch==2.1.1
+diffusers==0.21.4
+transformers==4.35.2
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Development
+black==23.12.0
+flake8==6.1.0
+mypy==1.7.0

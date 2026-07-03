@@ -1,0 +1,16 @@
+# Dependency directories
+frontend/node_modules/
+node_modules/
+
+# Build output
+frontend/.next/
+backend/static/assets/
+
+# Local files
+downloads/
+*.log
+*.tmp
+
+# Test output
+frontend/test-results/
+
