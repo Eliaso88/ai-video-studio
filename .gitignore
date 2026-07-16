@@ -14,3 +14,7 @@ downloads/
 # Test output
 frontend/test-results/
 
+# Python bytecode
+__pycache__/
+*.pyc
+
