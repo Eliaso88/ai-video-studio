@@ -60,14 +60,26 @@ jobs:
       - name: Wait for servers
         shell: pwsh
         run: |
-          $deadline = (Get-Date).AddSeconds(60)
+          $deadline = (Get-Date).AddSeconds(120)
           while ((Get-Date) -lt $deadline) {
             try {
-              Invoke-WebRequest -Uri http://127.0.0.1:8000/api/scripts -UseBasicParsing -TimeoutSec 5 | Out-Null
-              Invoke-WebRequest -Uri http://127.0.0.1:3000 -UseBasicParsing -TimeoutSec 5 | Out-Null
+              Write-Host "Checking backend at http://127.0.0.1:8000/api/scripts"
+              Invoke-WebRequest -Uri http://127.0.0.1:8000/api/scripts -UseBasicParsing -TimeoutSec 10 | Out-Null
+              Write-Host "Backend is responding"
+            } catch {
+              Write-Host "Backend not ready: $_"
+              Start-Sleep -Seconds 5
+              continue
+            }
+
+            try {
+              Write-Host "Checking frontend at http://127.0.0.1:3000"
+              Invoke-WebRequest -Uri http://127.0.0.1:3000 -UseBasicParsing -TimeoutSec 10 | Out-Null
+              Write-Host "Frontend is responding"
               break
             } catch {
-              Start-Sleep -Seconds 2
+              Write-Host "Frontend not ready: $_"
+              Start-Sleep -Seconds 5
             }
           }
           if ((Get-Date) -ge $deadline) {
