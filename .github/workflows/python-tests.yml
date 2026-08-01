@@ -5,6 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -55,20 +56,38 @@ jobs:
         shell: pwsh
         run: |
           Start-Process -FilePath npm -ArgumentList 'run','dev','--','--hostname','127.0.0.1','--port','3000' -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -PassThru | Out-Null
-          Start-Sleep -Seconds 15
+          Start-Sleep -Seconds 20
 
       - name: Wait for servers
         shell: pwsh
         run: |
-          $deadline = (Get-Date).AddSeconds(60)
+          $deadline = (Get-Date).AddSeconds(180)
           while ((Get-Date) -lt $deadline) {
+            $backendReady = $false
+            $frontendReady = $false
+
             try {
-              Invoke-WebRequest -Uri http://127.0.0.1:8000/api/scripts -UseBasicParsing -TimeoutSec 5 | Out-Null
-              Invoke-WebRequest -Uri http://127.0.0.1:3000 -UseBasicParsing -TimeoutSec 5 | Out-Null
-              break
+              Write-Host "Checking backend at http://127.0.0.1:8000/api/health"
+              Invoke-WebRequest -Uri http://127.0.0.1:8000/api/health -UseBasicParsing -TimeoutSec 10 | Out-Null
+              Write-Host "Backend is responding"
+              $backendReady = $true
             } catch {
-              Start-Sleep -Seconds 2
+              Write-Host "Backend not ready: $_"
             }
+
+            try {
+              Write-Host "Checking frontend at http://127.0.0.1:3000"
+              Invoke-WebRequest -Uri http://127.0.0.1:3000 -UseBasicParsing -TimeoutSec 10 | Out-Null
+              Write-Host "Frontend is responding"
+              $frontendReady = $true
+            } catch {
+              Write-Host "Frontend not ready: $_"
+            }
+
+            if ($backendReady -and $frontendReady) {
+              break
+            }
+            Start-Sleep -Seconds 5
           }
           if ((Get-Date) -ge $deadline) {
             throw 'Backend or frontend server failed to start in time.'
