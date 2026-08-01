@@ -23,11 +23,68 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements-backend.txt
           python -m pip install -r workers/requirements_test.txt
 
-      - name: Run tests
+      - name: Run backend tests
         run: |
+          python -m pytest backend/test_routes.py -v
           python -m pytest workers/test_video_generator.py -v
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Start backend server
+        shell: pwsh
+        run: |
+          Start-Job -Name backend -ScriptBlock {
+            Set-Location "${{ github.workspace }}"
+            python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
+          }
+          Start-Sleep -Seconds 10
+
+      - name: Start frontend server
+        shell: pwsh
+        run: |
+          Start-Job -Name frontend -ScriptBlock {
+            Set-Location "${{ github.workspace }}\frontend"
+            npm run dev
+          }
+          Start-Sleep -Seconds 15
+
+      - name: Wait for servers
+        shell: pwsh
+        run: |
+          $deadline = (Get-Date).AddSeconds(60)
+          while ((Get-Date) -lt $deadline) {
+            try {
+              Invoke-WebRequest -Uri http://127.0.0.1:8000/api/scripts -UseBasicParsing -TimeoutSec 5 | Out-Null
+              Invoke-WebRequest -Uri http://127.0.0.1:3000 -UseBasicParsing -TimeoutSec 5 | Out-Null
+              break
+            } catch {
+              Start-Sleep -Seconds 2
+            }
+          }
+          if ((Get-Date) -ge $deadline) {
+            throw 'Backend or frontend server failed to start in time.'
+          }
+
+      - name: Create frontend E2E test data
+        run: |
+          python backend/scripts/e2e_test.py
+
+      - name: Run frontend E2E tests
+        run: |
+          cd frontend
+          npm run test:e2e
