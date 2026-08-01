@@ -152,9 +152,10 @@ class TestMergeAudio:
 class TestGenerateVideoWithModel:
     """Tests for the main video generation function."""
     
+    @patch('workers.video_generator.ffmpeg_available', return_value=True)
     @patch('workers.video_generator.merge_audio')
     @patch('workers.video_generator.call_animatediff_server')
-    def test_successful_generation(self, mock_animatediff, mock_merge, tmp_path):
+    def test_successful_generation(self, mock_animatediff, mock_merge, mock_ffmpeg_available, tmp_path):
         """Test successful video generation."""
         image_file = tmp_path / "image.png"
         image_file.write_bytes(b"fake image")
@@ -179,6 +180,7 @@ class TestGenerateVideoWithModel:
         assert result == str(output_file)
         mock_animatediff.assert_called_once()
         mock_merge.assert_called_once()
+        mock_ffmpeg_available.assert_called_once()
     
     def test_validation_error(self, tmp_path):
         """Test error on invalid inputs."""
