@@ -48,19 +48,13 @@ jobs:
       - name: Start backend server
         shell: pwsh
         run: |
-          Start-Job -Name backend -ScriptBlock {
-            Set-Location "${{ github.workspace }}"
-            python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000
-          }
+          Start-Process -FilePath python -ArgumentList '-m','uvicorn','backend.app:app','--host','127.0.0.1','--port','8000' -WorkingDirectory "${{ github.workspace }}" -NoNewWindow -PassThru | Out-Null
           Start-Sleep -Seconds 10
 
       - name: Start frontend server
         shell: pwsh
         run: |
-          Start-Job -Name frontend -ScriptBlock {
-            Set-Location "${{ github.workspace }}\frontend"
-            npm run dev
-          }
+          Start-Process -FilePath npm -ArgumentList 'run','dev','--','--hostname','127.0.0.1','--port','3000' -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -PassThru | Out-Null
           Start-Sleep -Seconds 15
 
       - name: Wait for servers
