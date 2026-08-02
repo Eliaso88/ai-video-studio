@@ -41,10 +41,11 @@ jobs:
           node-version: '20'
 
       - name: Install frontend dependencies
+        working-directory: frontend
         run: |
-          cd frontend
+          npm config set audit false
           npm ci
-          npx playwright install --with-deps
+          npm exec playwright install --with-deps
 
       - name: Start backend server
         shell: pwsh
