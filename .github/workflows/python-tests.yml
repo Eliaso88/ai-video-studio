@@ -50,32 +50,40 @@ jobs:
       - name: Start backend server
         shell: pwsh
         run: |
-          $backendLog = Join-Path $env:GITHUB_WORKSPACE 'backend-server.log'
-          Write-Host "Starting backend server and logging to $backendLog"
-          Start-Process -FilePath python -ArgumentList '-m','uvicorn','backend.app:app','--host','127.0.0.1','--port','8000' -WorkingDirectory "${{ github.workspace }}" -NoNewWindow -RedirectStandardOutput $backendLog -RedirectStandardError $backendLog -PassThru | Out-Null
+          $backendStdout = Join-Path $env:GITHUB_WORKSPACE 'backend-server.out.log'
+          $backendStderr = Join-Path $env:GITHUB_WORKSPACE 'backend-server.err.log'
+          Write-Host "Starting backend server and logging to $backendStdout / $backendStderr"
+          Start-Process -FilePath python -ArgumentList '-m','uvicorn','backend.app:app','--host','127.0.0.1','--port','8000' -WorkingDirectory "${{ github.workspace }}" -NoNewWindow -RedirectStandardOutput $backendStdout -RedirectStandardError $backendStderr -PassThru | Out-Null
           Start-Sleep -Seconds 10
           Write-Host "Backend process preview:"
           Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
-          Write-Host "Backend startup preview:"
-          Get-Content $backendLog -Tail 20
+          Write-Host "Backend startup preview (stdout):"
+          if (Test-Path $backendStdout) { Get-Content $backendStdout -Tail 20 }
+          Write-Host "Backend startup preview (stderr):"
+          if (Test-Path $backendStderr) { Get-Content $backendStderr -Tail 20 }
 
       - name: Start frontend server
         shell: pwsh
         run: |
-          $frontendLog = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.log'
-          Write-Host "Starting frontend server and logging to $frontendLog"
-          Start-Process -FilePath npm -ArgumentList 'run','dev','--','--hostname','127.0.0.1','--port','3000' -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -RedirectStandardOutput $frontendLog -RedirectStandardError $frontendLog -PassThru | Out-Null
+          $frontendStdout = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.out.log'
+          $frontendStderr = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.err.log'
+          Write-Host "Starting frontend server and logging to $frontendStdout / $frontendStderr"
+          Start-Process -FilePath npm -ArgumentList 'run','dev','--','--hostname','127.0.0.1','--port','3000' -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -RedirectStandardOutput $frontendStdout -RedirectStandardError $frontendStderr -PassThru | Out-Null
           Start-Sleep -Seconds 20
           Write-Host "Frontend process preview:"
           Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
-          Write-Host "Frontend startup preview:"
-          Get-Content $frontendLog -Tail 20
+          Write-Host "Frontend startup preview (stdout):"
+          if (Test-Path $frontendStdout) { Get-Content $frontendStdout -Tail 20 }
+          Write-Host "Frontend startup preview (stderr):"
+          if (Test-Path $frontendStderr) { Get-Content $frontendStderr -Tail 20 }
 
       - name: Wait for servers
         shell: pwsh
         run: |
-          $backendLog = Join-Path $env:GITHUB_WORKSPACE 'backend-server.log'
-          $frontendLog = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.log'
+          $backendStdout = Join-Path $env:GITHUB_WORKSPACE 'backend-server.out.log'
+          $backendStderr = Join-Path $env:GITHUB_WORKSPACE 'backend-server.err.log'
+          $frontendStdout = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.out.log'
+          $frontendStderr = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.err.log'
           $deadline = (Get-Date).AddSeconds(180)
           while ((Get-Date) -lt $deadline) {
             $backendReady = $false
