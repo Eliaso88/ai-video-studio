@@ -84,10 +84,14 @@ jobs:
           $backendStderr = Join-Path $env:GITHUB_WORKSPACE 'backend-server.err.log'
           $frontendStdout = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.out.log'
           $frontendStderr = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.err.log'
-          $deadline = (Get-Date).AddSeconds(180)
+          $deadline = (Get-Date).AddSeconds(300)
+          $attempt = 0
           while ((Get-Date) -lt $deadline) {
+            $attempt++
             $backendReady = $false
             $frontendReady = $false
+
+            Write-Host "Attempt #$attempt: checking server readiness"
 
             try {
               Write-Host "Checking backend at http://127.0.0.1:8000/api/health"
@@ -96,6 +100,14 @@ jobs:
               $backendReady = $true
             } catch {
               Write-Host "Backend not ready: $_"
+              if (Test-Path $backendStdout) {
+                Write-Host "Backend stdout tail:"
+                Get-Content $backendStdout -Tail 20
+              }
+              if (Test-Path $backendStderr) {
+                Write-Host "Backend stderr tail:"
+                Get-Content $backendStderr -Tail 20
+              }
             }
 
             try {
@@ -105,7 +117,17 @@ jobs:
               $frontendReady = $true
             } catch {
               Write-Host "Frontend not ready: $_"
+              if (Test-Path $frontendStdout) {
+                Write-Host "Frontend stdout tail:"
+                Get-Content $frontendStdout -Tail 20
+              }
+              if (Test-Path $frontendStderr) {
+                Write-Host "Frontend stderr tail:"
+                Get-Content $frontendStderr -Tail 20
+              }
             }
+
+            Write-Host "Status: backendReady=$backendReady frontendReady=$frontendReady"
 
             if ($backendReady -and $frontendReady) {
               break
@@ -115,28 +137,31 @@ jobs:
           if ((Get-Date) -ge $deadline) {
             Write-Host "==== Backend stdout ===="
             if (Test-Path $backendStdout) {
-              Get-Content $backendStdout -Tail 60
+              Get-Content $backendStdout -Tail 120
             } else {
               Write-Host "No backend stdout found at $backendStdout"
             }
             Write-Host "==== Backend stderr ===="
             if (Test-Path $backendStderr) {
-              Get-Content $backendStderr -Tail 60
+              Get-Content $backendStderr -Tail 120
             } else {
               Write-Host "No backend stderr found at $backendStderr"
             }
             Write-Host "==== Frontend stdout ===="
             if (Test-Path $frontendStdout) {
-              Get-Content $frontendStdout -Tail 60
+              Get-Content $frontendStdout -Tail 120
             } else {
               Write-Host "No frontend stdout found at $frontendStdout"
             }
             Write-Host "==== Frontend stderr ===="
             if (Test-Path $frontendStderr) {
-              Get-Content $frontendStderr -Tail 60
+              Get-Content $frontendStderr -Tail 120
             } else {
               Write-Host "No frontend stderr found at $frontendStderr"
             }
+            Write-Host "==== Running processes ===="
+            Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
+            Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
             throw 'Backend or frontend server failed to start in time.'
           }
 
