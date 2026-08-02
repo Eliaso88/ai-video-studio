@@ -53,7 +53,7 @@ jobs:
           $backendStdout = Join-Path $env:GITHUB_WORKSPACE 'backend-server.out.log'
           $backendStderr = Join-Path $env:GITHUB_WORKSPACE 'backend-server.err.log'
           Write-Host "Starting backend server and logging to $backendStdout / $backendStderr"
-          Start-Process -FilePath pwsh -ArgumentList '-NoProfile','-Command', "python -m uvicorn backend.app:app --host 127.0.0.1 --port 8000 > `\"$backendStdout`\" 2> `\"$backendStderr`\"" -WorkingDirectory "${{ github.workspace }}" -NoNewWindow -PassThru | Out-Null
+          Start-Process -FilePath python -ArgumentList '-m','uvicorn','backend.app:app','--host','127.0.0.1','--port','8000' -WorkingDirectory "${{ github.workspace }}" -NoNewWindow -RedirectStandardOutput $backendStdout -RedirectStandardError $backendStderr -PassThru | Out-Null
           Start-Sleep -Seconds 10
           Write-Host "Backend process preview:"
           Get-Process -Name python -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
@@ -68,7 +68,7 @@ jobs:
           $frontendStdout = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.out.log'
           $frontendStderr = Join-Path $env:GITHUB_WORKSPACE 'frontend-server.err.log'
           Write-Host "Starting frontend server and logging to $frontendStdout / $frontendStderr"
-          Start-Process -FilePath pwsh -ArgumentList '-NoProfile','-Command', "npm run dev -- --hostname 127.0.0.1 --port 3000 > `\"$frontendStdout`\" 2> `\"$frontendStderr`\"" -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -PassThru | Out-Null
+          Start-Process -FilePath npm -ArgumentList 'run','dev','--','--hostname','127.0.0.1','--port','3000' -WorkingDirectory "${{ github.workspace }}\frontend" -NoNewWindow -RedirectStandardOutput $frontendStdout -RedirectStandardError $frontendStderr -PassThru | Out-Null
           Start-Sleep -Seconds 20
           Write-Host "Frontend process preview:"
           Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object -First 5 | Format-Table Id,ProcessName,Path
